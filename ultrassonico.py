@@ -1,24 +1,42 @@
 from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import UltrasonicSensor
+from pybricks.pupdevices import Motor, UltrasonicSensor
 from pybricks.parameters import Port
 from pybricks.tools import wait
 
-# Hub transmissor
-hub = PrimeHub(broadcast_channel=1)
+# broadcast_channel=1 → envia ultrassônico pro Hub 1
+# observe_channels=[2] → recebe inclinação do Hub 1
+hub = PrimeHub(broadcast_channel=1, observe_channels=[2])
 
-# Troque a porta se necessário
-ultra = UltrasonicSensor(Port.A)
+ultra = UltrasonicSensor(Port.B)
+motor = Motor(Port.A)
+
+em_rampa = False
 
 while True:
 
+    # =========================
+    # ENVIA ULTRASSÔNICO
+    # =========================
+
     distancia = ultra.distance()
 
-    # 15 cm ou menos = obstáculo
-    if distancia <= 100:
+    if distancia <= 60:
         hub.ble.broadcast(1)
-
-    # 16 cm ou mais = livre
     else:
         hub.ble.broadcast(0)
+
+    # =========================
+    # RECEBE INCLINAÇÃO DO HUB 1
+    # =========================
+
+    dados = hub.ble.observe(2)
+
+    if dados is True and not em_rampa:
+        em_rampa = True
+        motor.run_angle(200, -200)   # gira 2500 graus para frente
+
+    elif dados is False and em_rampa:
+        em_rampa = False
+        motor.run_angle(200, 200)  # gira 2500 graus para voltar
 
     wait(20)
